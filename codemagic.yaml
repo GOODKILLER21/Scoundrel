@@ -9,13 +9,21 @@ workflows:
     scripts:
       - npm install
 
+      # ensure Capacitor is ready
       - npx cap add ios || true
       - npx cap sync ios
 
+      # IMPORTANT: go into correct iOS folder
       - cd ios/App
+
+      # install CocoaPods safely
+      - pod init || true
       - pod install
 
+      # go back
       - cd ../..
+
+      # build using Capacitor helper (NOT raw xcodebuild)
       - npx cap build ios
 
     artifacts:
