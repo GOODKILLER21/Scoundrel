@@ -8,13 +8,15 @@ workflows:
 
     scripts:
       - npm install
-      - npx cap add ios
+
+      - npx cap add ios || true
       - npx cap sync ios
 
       - cd ios/App
-      - xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive
+      - pod install
 
-      - xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist exportOptions.plist -exportPath build/export
+      - cd ../..
+      - npx cap build ios
 
     artifacts:
-      - ios/App/build/export/*.ipa
+      - ios/**/*.ipa
