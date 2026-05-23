@@ -1,13 +1,20 @@
 workflows:
   ios-capacitor-build:
     name: Scoundrel iOS Build
+
     environment:
       node: latest
+      xcode: latest
 
     scripts:
       - npm install
       - npx cap add ios
       - npx cap sync ios
 
+      - cd ios/App
+      - xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive
+
+      - xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist exportOptions.plist -exportPath build/export
+
     artifacts:
-      - ios/**/*.ipa
+      - ios/App/build/export/*.ipa
