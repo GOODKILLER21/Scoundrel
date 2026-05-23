@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scoundrel — Premium Tabletop Edition</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --panel-bg: #12121c;
+            --card-bg: #1a1a26;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --color-monster: #f43f5e;
+            --color-weapon: #3b82f6;
+            --color-potion: #10b981;
+            --color-gold: #fbbf24;
+            --radius: 16px;
+            --card-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.7);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a2e 0%, var(--bg-dark) 70%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100dvh;
+            max-height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 10px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 8px 14px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            color: var(--color-gold);
+            font-weight: 900;
+            text-shadow: 0 2px 10px rgba(251,191,36,0.2);
+        }
+
+        .system-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .hud-strip {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .hud-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .hud-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 1.05rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .hud-value.floor-v  { color: var(--color-gold); }
+        .hud-value.score-v  { color: var(--color-potion); }
+        .hud-value.best-v   { color: #a78bfa; }
+        .hud-value.timer-v  { color: var(--color-gold); font-variant-numeric: tabular-nums; }
+        .hud-value.timer-v.warn { color: var(--color-monster); animation: timerPulse 0.5s infinite alternate; }
+
+        .hud-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.07); flex-shrink: 0; }
+
+        .timer-bar-wrap {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .timer-bar-track {
+            height: 5px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .timer-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: var(--color-gold);
+            transition: width 1s linear, background 0.3s;
+        }
+
+        @keyframes timerPulse {
+            from { text-shadow: none; }
+            to   { text-shadow: 0 0 10px rgba(244,63,94,0.8); }
+        }
+
+        .dashboard {
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            padding: 8px 10px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+        }
+
+        .stat-value.hp  { color: var(--color-monster); text-shadow: 0 0 12px rgba(244,63,94,0.2); }
+        .stat-value.wpn { color: var(--color-weapon);  text-shadow: 0 0 12px rgba(59,130,246,0.2); }
+        .stat-value.dur { color: var(--color-gold); font-size: 0.75rem; margin-top: 3px; font-weight: 600; }
+
+        .dungeon-floor {
+            background: rgba(18,18,28,0.75);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 10px 14px 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+
+        .section-title {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px 14px;
+            flex: 1;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .room-grid > div {
+            overflow: visible;
+        }
+
+        @keyframes pulseMonster {
+            0%   { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(244,63,94,0.2); }
+            50%  { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(244,63,94,0.55); }
+            100% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(244,63,94,0.2); }
+        }
+        @keyframes pulseWeapon {
+            0%   { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(59,130,246,0.2); }
+            50%  { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(59,130,246,0.55); }
+            100% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(59,130,246,0.2); }
+        }
+        @keyframes pulsePotion {
+            0%   { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(16,185,129,0.2); }
+            50%  { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(16,185,129,0.55); }
+            100% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 6px rgba(16,185,129,0.2); }
+        }
+
+        .card-frame {
+            background: linear-gradient(135deg, var(--card-bg) 0%, #13131c 100%);
+            border: 2px solid #2e2e42;
+            border-radius: 14px;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+            transform-origin: center 110%;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.3s ease;
+            will-change: transform;
+        }
+
+        .card-frame.monster:not(.resolved) { animation: pulseMonster 2.5s infinite ease-in-out; }
+        .card-frame.weapon:not(.resolved)  { animation: pulseWeapon  2.5s infinite ease-in-out; }
+        .card-frame.potion:not(.resolved)  { animation: pulsePotion  2.5s infinite ease-in-out; }
+
+        .card-frame.lifting {
+            border-color: var(--color-gold) !important;
+            box-shadow: 0 28px 40px rgba(0,0,0,0.95), 0 0 24px rgba(251,191,36,0.5) !important;
+            animation: none !important;
+            z-index: 10;
+        }
+
+        .card-frame::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            border-radius: 14px 14px 0 0;
+        }
+
+        .card-frame.monster::before { background: var(--color-monster); }
+        .card-frame.weapon::before  { background: var(--color-weapon); }
+        .card-frame.potion::before  { background: var(--color-potion); }
+
+        .card-frame.monster { border-color: rgba(244,63,94,0.25); }
+        .card-frame.weapon  { border-color: rgba(59,130,246,0.25); }
+        .card-frame.potion  { border-color: rgba(16,185,129,0.25); }
+
+        .card-frame.resolved {
+            opacity: 0.08;
+            border: 2px dashed #222233;
+            background: transparent;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            animation: none !important;
+        }
+        .card-frame.resolved::before { display: none; }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: -1px;
+        }
+
+        .card-art-center {
+            font-size: 2.2rem;
+            text-align: center;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        .card-label-bottom {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            font-weight: 700;
+            background: rgba(255,255,255,0.03);
+            padding: 3px 0;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .action-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        button {
+            background: #1e1e2f;
+            color: var(--text-main);
+            border: 1px solid #33334c;
+            padding: 11px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        button:active:not(:disabled) { transform: scale(0.97); }
+
+        button.primary {
+            background: linear-gradient(135deg, var(--color-weapon) 0%, #1d4ed8 100%);
+            border-color: #2563eb;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+
+        button.danger {
+            background: rgba(244,63,94,0.1);
+            border-color: rgba(244,63,94,0.25);
+            color: #ff3b30;
+        }
+
+        button:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+            background: #12121a !important;
+            border-color: #1e1e2a !important;
+            color: var(--text-muted) !important;
+            box-shadow: none;
+            transform: none !important;
+        }
+
+        .ticker-box {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            height: 56px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.7rem;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+
+        .ticker-line { margin-bottom: 3px; color: var(--text-muted); }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4,4,6,0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 100;
+        }
+
+        .modal-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 350px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        }
+
+        .modal-card h2 { margin-bottom: 10px; font-size: 1.3rem; color: var(--color-gold); }
+        .modal-card p  { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn-stack { display: flex; flex-direction: column; gap: 10px; }
+
+        #gameover-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4,4,6,0.0);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 200;
+            flex-direction: column;
+            transition: background 0.6s ease;
+        }
+
+        #gameover-overlay.visible {
+            background: rgba(4,4,6,0.93);
+            backdrop-filter: blur(12px);
+        }
+
+        .gameover-card {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 30px 28px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            opacity: 0;
+            transform: scale(0.7) translateY(40px);
+            transition: opacity 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.3s,
+                        transform 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.3s;
+        }
+
+        .gameover-card.shown {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .gameover-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(
+                transparent 0deg,
+                rgba(244,63,94,0.08) 60deg,
+                transparent 120deg,
+                rgba(251,191,36,0.06) 200deg,
+                transparent 260deg
+            );
+            animation: rotateBg 6s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        .go-skull {
+            font-size: 3.2rem;
+            display: block;
+            margin-bottom: 6px;
+            animation: skullBounce 1s cubic-bezier(0.175,0.885,0.32,1.275) 0.5s both;
+        }
+
+        @keyframes skullBounce {
+            0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+            70%  { transform: scale(1.2) rotate(5deg);  opacity: 1; }
+            100% { transform: scale(1) rotate(0deg);   opacity: 1; }
+        }
+
+        .go-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .go-title.death  { color: var(--color-monster); text-shadow: 0 0 20px rgba(244,63,94,0.5); }
+        .go-title.clear  { color: var(--color-gold);    text-shadow: 0 0 20px rgba(251,191,36,0.5); }
+        .go-title.time   { color: var(--color-weapon);  text-shadow: 0 0 20px rgba(59,130,246,0.5); }
+
+        .go-reason {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+        }
+
+        .go-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .go-stat {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 8px 4px;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .go-stat.shown { opacity: 1; transform: translateY(0); }
+
+        .go-stat-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .go-stat-val   { font-size: 1.1rem; font-weight: 900; margin-top: 2px; }
+        .go-stat-val.s { color: var(--color-potion); }
+        .go-stat-val.h { color: var(--color-monster); }
+        .go-stat-val.b { color: #a78bfa; }
+
+        .new-best-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.4s ease 0.8s, transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.8s;
+        }
+
+        .new-best-badge.shown { opacity: 1; transform: scale(1); }
+
+        .go-btns { display: flex; flex-direction: column; gap: 8px; position: relative; }
+
+        .particles-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 201;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+   <audio id="bgMusic" loop preload="auto" playsinline style="display:none">
+     <source src="theme.mp3" type="audio/mpeg">
+   </audio>
+ <button id="startMusicBtn" style="position:fixed;bottom:12px;right:12px;z-index:9999;padding:10px 14px;border-radius:10px;border:none;background:#111;color:#fff;">
+   Tap for music
+ </button>
+
+ <script>
+   const audio = document.getElementById("bgMusic");
+   const btn = document.getElementById("startMusicBtn");
+   audio.volume = 0.5;
+
+   function startMusic() {
+     audio.play().then(() => { btn.style.display = "none"; }).catch(() => {});
+   }
+
+   // Try autoplay (may fail, that's okay)
+   startMusic();
+
+   // Mobile gesture fallbacks
+   window.addEventListener("touchstart", startMusic, { once: true });
+   window.addEventListener("click", startMusic, { once: true });
+   window.addEventListener("pointerdown", startMusic, { once: true });
+   btn.addEventListener("click", startMusic);
+ </script>
+
+    <div class="app-container">
+        <header>
+            <h1>SCOUNDREL</h1>
+            <div class="system-actions">
+                <button onclick="saveGame()" style="padding:5px 11px;font-size:0.72rem;border-radius:8px;">Save</button>
+                <button onclick="loadGame()" style="padding:5px 11px;font-size:0.72rem;border-radius:8px;">Load</button>
+            </div>
+        </header>
+
+        <div class="hud-strip">
+            <div class="hud-cell">
+                <span class="hud-label">Floor</span>
+                <span class="hud-value floor-v" id="display-floor">1/7</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hud-cell">
+                <span class="hud-label">Score</span>
+                <span class="hud-value score-v" id="display-score">0</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="timer-bar-wrap">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span class="hud-label">Time</span>
+                    <span class="hud-value timer-v" id="display-timer">60s</span>
+                </div>
+                <div class="timer-bar-track">
+                    <div class="timer-bar-fill" id="timer-bar" style="width:100%"></div>
+                </div>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hud-cell">
+                <span class="hud-label">Best</span>
+                <span class="hud-value best-v" id="display-best">0</span>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="stat-card">
+                <span class="stat-label">Health Status</span>
+                <span class="stat-value hp" id="display-hp">20/20</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Weapon Asset</span>
+                <span class="stat-value wpn" id="display-weapon">None</span>
+                <div class="stat-value dur" id="display-durability">N/A</div>
+            </div>
+        </div>
+
+        <div class="dungeon-floor">
+            <div class="section-title">
+                <span id="display-archetype">Dungeon Generation</span>
+                <span id="display-progress">Resolved: 0/3</span>
+            </div>
+            <div class="room-grid" id="room-deck-slots"></div>
+        </div>
+
+        <div class="action-bar">
+            <button class="danger" id="btn-flee" onclick="fleeRoom()">Flee Room</button>
+            <button class="primary" id="btn-advance" onclick="advanceRoom()" disabled>Next Room</button>
+        </div>
+
+        <div class="ticker-box" id="ticker-console">
+            <div class="ticker-line" style="color:var(--color-gold);">Dungeon crawl initialized. Simulation ready.</div>
+        </div>
+    </div>
+
+    <div class="overlay" id="action-modal">
+        <div class="modal-card">
+            <h2 id="modal-title">Encounter Phase</h2>
+            <p id="modal-desc">Select operational combat profile.</p>
+            <div class="modal-btn-stack" id="modal-options-wrapper"></div>
+        </div>
+    </div>
+
+    <div id="gameover-overlay">
+        <canvas class="particles-canvas" id="particles-canvas"></canvas>
+        <div class="gameover-card" id="gameover-card">
+            <span class="go-skull" id="go-skull">💀</span>
+            <div class="go-title death" id="go-title">GAME OVER</div>
+            <div class="go-reason" id="go-reason">Your health reached zero.</div>
+            <div class="new-best-badge" id="new-best-badge">✦ NEW BEST ✦</div>
+            <div class="go-stats">
+                <div class="go-stat" id="go-stat-0">
+                    <div class="go-stat-label">Score</div>
+                    <div class="go-stat-val s" id="go-score">0</div>
+                </div>
+                <div class="go-stat" id="go-stat-1">
+                    <div class="go-stat-label">HP Left</div>
+                    <div class="go-stat-val h" id="go-hp">0</div>
+                </div>
+                <div class="go-stat" id="go-stat-2">
+                    <div class="go-stat-label">Best</div>
+                    <div class="go-stat-val b" id="go-best">0</div>
+                </div>
+            </div>
+            <div class="go-btns">
+                <button class="primary" onclick="restartFromGameOver()">⟳ Restart Game</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ──────────────────────────────────────────────
+    //  STATE
+    // ──────────────────────────────────────────────
+    let state = {
+        hp: 20,
+        deck: [],
+        room: [],
+        equippedWeapon: null,
+        weaponDurability: null,
+        potionsDrunkThisRoom: 0,
+        cardsResolvedThisRoom: 0,
+        lastRoomFleed: false,
+        gameActive: true,
+        dungeonArchetype: "",
+        score: 0,
+        floorsThisCycle: 0,
+        timerSecondsLeft: 60,
+    };
+
+    let timerInterval = null;
+    const TIMER_TOTAL = 60;
+    const FLOORS_PER_CYCLE = 7;
+
+    function getBestScore() {
+        return parseInt(localStorage.getItem('scoundrel_best_score') || '0', 10);
+    }
+    function setBestScore(v) {
+        localStorage.setItem('scoundrel_best_score', String(v));
+    }
+
+    const CARD_TYPES = {
+        SPADES:   { icon: '♠', type: 'monster', label: 'Monster' },
+        CLUBS:    { icon: '♣', type: 'monster', label: 'Monster' },
+        DIAMONDS: { icon: '♦', type: 'weapon',  label: 'Weapon'  },
+        HEARTS:   { icon: '♥', type: 'potion',  label: 'Potion'  }
+    };
+
+    function initDeck() {
+        let cards = [];
+        const ranks = [2,3,4,5,6,7,8,9,10,11,12,13,14];
+        const archetypes = ["The Horde","The Catacombs","The Alchemist's Vault"];
+        state.dungeonArchetype = archetypes[Math.floor(Math.random() * archetypes.length)];
+
+        for (const [suitName, meta] of Object.entries(CARD_TYPES)) {
+            for (let rank of ranks) {
+                if ((suitName === 'DIAMONDS' || suitName === 'HEARTS') && rank > 10) continue;
+                let rankModifier = rank;
+
+                if (state.dungeonArchetype === "The Horde") {
+                    if (meta.type === 'monster' && rank > 11) continue;
+                    if (meta.type === 'weapon'  && rank > 8)  continue;
+                } else if (state.dungeonArchetype === "The Catacombs") {
+                    if (meta.type === 'potion' && rank > 7) rankModifier = Math.max(2, rank - 3);
+                } else if (state.dungeonArchetype === "The Alchemist's Vault") {
+                    if (meta.type === 'monster') rankModifier = Math.min(14, rank + 1);
+                }
+
+                cards.push({ rank: rankModifier, suit: meta.icon, type: meta.type, label: meta.label, id: Math.random().toString(36).substring(2,9) });
+            }
+        }
+
+        if (state.dungeonArchetype === "The Horde") {
+            for (let i=0;i<4;i++) cards.push({ rank: Math.floor(Math.random()*4)+2, suit:'♠', type:'monster', label:'Monster', id: Math.random().toString() });
+        } else if (state.dungeonArchetype === "The Alchemist's Vault") {
+            for (let i=0;i<3;i++) cards.push({ rank: Math.floor(Math.random()*5)+4, suit:'♥', type:'potion',  label:'Potion',  id: Math.random().toString() });
+        }
+
+        for (let i = cards.length-1; i > 0; i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+        state.deck = cards;
+    }
+
+    function getRankName(rank) {
+        if (rank===11) return 'J';
+        if (rank===12) return 'Q';
+        if (rank===13) return 'K';
+        if (rank===14) return 'A';
+        return rank;
+    }
+
+    // ──────────────────────────────────────────────
+    //  TIMER (Corrected Logic)
+    // ──────────────────────────────────────────────
+    function startTimer(isResuming = false) {
+        if (timerInterval) clearInterval(timerInterval);
+        
+        if (!isResuming) {
+            state.timerSecondsLeft = TIMER_TOTAL;
+        }
+        
+        updateTimerDisplay();
+        timerInterval = setInterval(tickTimer, 1000);
+    }
+
+    function tickTimer() {
+        if (!state.gameActive) {
+            stopTimer();
+            return;
+        }
+
+        state.timerSecondsLeft--;
+        updateTimerDisplay();
+
+        if (state.timerSecondsLeft <= 0) {
+            stopTimer();
+            state.gameActive = false;
+            renderEngine();
+            triggerGameOver('time', "Time's up! The dungeon devoured you.");
+        }
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function updateTimerDisplay() {
+        const el   = document.getElementById('display-timer');
+        const bar  = document.getElementById('timer-bar');
+        const pct  = Math.max(0, state.timerSecondsLeft / TIMER_TOTAL * 100);
+        el.textContent = state.timerSecondsLeft + 's';
+        el.classList.toggle('warn', state.timerSecondsLeft <= 15);
+        bar.style.width = pct + '%';
+        bar.style.background = state.timerSecondsLeft <= 15
+            ? 'var(--color-monster)'
+            : state.timerSecondsLeft <= 30
+                ? 'var(--color-gold)'
+                : 'var(--color-potion)';
+    }
+
+    // ──────────────────────────────────────────────
+    //  GAME ACTIONS
+    // ──────────────────────────────────────────────
+    function initGame() {
+        hideGameOver();
+        stopTimer();
+        initDeck();
+        state.hp = 20;
+        state.equippedWeapon = null;
+        state.weaponDurability = null;
+        state.room = [];
+        state.gameActive = true;
+        state.score = 0;
+        state.floorsThisCycle = 0;
+        state.timerSecondsLeft = TIMER_TOTAL;
+        fillRoom();
+        renderEngine();
+        startTimer();
+    }
+
+    function fillRoom() {
+        state.potionsDrunkThisRoom = 0;
+        state.cardsResolvedThisRoom = 0;
+        seedCardRestStates();
+        while (state.room.length < 4 && state.deck.length > 0) {
+            state.room.push({ card: state.deck.shift(), resolved: false });
+        }
+    }
+
+    function renderEngine() {
+        document.getElementById('display-hp').innerText = `${state.hp}/20`;
+        document.getElementById('display-weapon').innerText = state.equippedWeapon ? `${getRankName(state.equippedWeapon.rank)}${state.equippedWeapon.suit}` : 'None';
+        document.getElementById('display-durability').innerText = state.weaponDurability ? `Requires targets ≤ ${state.weaponDurability-1}` : (state.equippedWeapon ? 'Pristine Weapon Edge' : 'N/A');
+        document.getElementById('display-progress').innerText = `Resolved: ${state.cardsResolvedThisRoom}/3`;
+        document.getElementById('display-archetype').innerText = state.dungeonArchetype;
+        document.getElementById('display-score').innerText = state.score;
+        document.getElementById('display-floor').innerText = `${state.floorsThisCycle}/7`;
+        document.getElementById('display-best').innerText  = getBestScore();
+        updateTimerDisplay();
+
+        const container = document.getElementById('room-deck-slots');
+        container.innerHTML = '';
+
+        state.room.forEach((item, index) => {
+            const wrap  = document.createElement('div');
+            const frame = document.createElement('div');
+
+            if (item.resolved) {
+                frame.className = 'card-frame resolved';
+                const deadRot = (Math.random() - 0.5) * 8;
+                frame.style.transform = `rotate(${deadRot}deg) scale(0.93)`;
+            } else {
+                frame.className = `card-frame ${item.card.type}`;
+                frame.innerHTML = `
+                    <div class="card-top">
+                        <span>${getRankName(item.card.rank)}</span>
+                        <span>${item.card.suit}</span>
+                    </div>
+                    <div class="card-art-center">${item.card.suit}</div>
+                    <div class="card-label-bottom">${item.card.label} (${item.card.rank})</div>
+                `;
+                frame.onclick = () => { handleInteraction(index); };
+                requestAnimationFrame(() => attachCardPhysics(frame, index));
+            }
+            wrap.appendChild(frame);
+            container.appendChild(wrap);
+        });
+
+        const activeCount = state.room.filter(c => !c.resolved).length;
+        document.getElementById('btn-flee').disabled    = state.lastRoomFleed || state.cardsResolvedThisRoom > 0 || activeCount < 4;
+        document.getElementById('btn-advance').disabled = state.cardsResolvedThisRoom < 3 && activeCount > 0;
+    }
+
+    function handleInteraction(index) {
+        if (!state.gameActive) return;
+        const card = state.room[index].card;
+        const wrapper = document.getElementById('modal-options-wrapper');
+        wrapper.innerHTML = '';
+        document.getElementById('modal-title').innerText = `${card.label} Encounter`;
+
+        if (card.type === 'weapon') {
+            document.getElementById('modal-desc').innerText = `Equip this ${getRankName(card.rank)}♦ weapon asset? Existing armaments are permanently broken.`;
+            createModalBtn('Equip Weapon Asset', () => executeWeapon(index));
+        } else if (card.type === 'potion') {
+            const used = state.potionsDrunkThisRoom >= 1;
+            document.getElementById('modal-desc').innerText = used ? "Over-consumption penalty: No health restoration." : `Consume potion matrix to restore up to ${card.rank} hit points.`;
+            createModalBtn(used ? 'Discard Potion' : 'Drink Healing Potion', () => executePotion(index));
+        } else if (card.type === 'monster') {
+            document.getElementById('modal-desc').innerText = `Threat Value: ${card.rank} Attack Units.`;
+            const canUseWeapon = state.equippedWeapon && (state.weaponDurability === null || card.rank < state.weaponDurability);
+            const wpnDamage = state.equippedWeapon ? Math.max(0, card.rank - state.equippedWeapon.rank) : card.rank;
+            const weaponBtn = createModalBtn(`Slay with Weapon (Take ${wpnDamage} DMG)`, () => executeMonsterWeapon(index));
+            if (!canUseWeapon) weaponBtn.disabled = true;
+            createModalBtn(`Engage Barehanded (Take ${card.rank} DMG)`, () => executeMonsterBarehanded(index));
+        }
+
+        createModalBtn('Retreat', closeModal, true);
+        document.getElementById('action-modal').style.display = 'flex';
+    }
+
+    function createModalBtn(text, clickEvent, isSecondary=false) {
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        if (!isSecondary) btn.className = 'primary';
+        btn.onclick = () => { closeModal(); clickEvent(); };
+        document.getElementById('modal-options-wrapper').appendChild(btn);
+        return btn;
+    }
+
+    function closeModal() { document.getElementById('action-modal').style.display = 'none'; }
+
+    function executeWeapon(index) {
+        state.equippedWeapon = state.room[index].card;
+        state.weaponDurability = null;
+        resolveCard(index, `Equipped weapon: ${state.equippedWeapon.rank}♦`, 'var(--color-weapon)');
+    }
+
+    function executePotion(index) {
+        const card = state.room[index].card;
+        if (state.potionsDrunkThisRoom === 0) {
+            const pre = state.hp;
+            state.hp = Math.min(20, state.hp + card.rank);
+            state.potionsDrunkThisRoom++;
+            resolveCard(index, `Healed +${state.hp-pre} HP.`, 'var(--color-potion)');
+        } else {
+            resolveCard(index, `Excess potion consumed.`, 'var(--text-muted)');
+        }
+    }
+
+    function executeMonsterBarehanded(index) {
+        const card = state.room[index].card;
+        state.hp -= card.rank;
+        resolveCard(index, `Barehanded combat. Sustained ${card.rank} DMG.`, 'var(--color-monster)');
+    }
+
+    function executeMonsterWeapon(index) {
+        const card = state.room[index].card;
+        const dmg  = Math.max(0, card.rank - state.equippedWeapon.rank);
+        state.hp  -= dmg;
+        state.weaponDurability = card.rank;
+        resolveCard(index, `Weapon strike. Sustained ${dmg} DMG.`, 'var(--color-gold)');
+    }
+
+    function resolveCard(index, logMsg, color) {
+        state.room[index].resolved = true;
+        state.cardsResolvedThisRoom++;
+        appendLog(logMsg, color);
+        postActionCheck();
+    }
+
+    function fleeRoom() {
+        const remaining = state.room.filter(c => !c.resolved).map(c => c.card);
+        state.deck.push(...remaining);
+        state.room = [];
+        state.lastRoomFleed = true;
+        appendLog('Fled area. Room items mixed into deck.', 'var(--color-gold)');
+        fillRoom();
+        renderEngine();
+    }
+
+    function advanceRoom() {
+        state.score++;
+        state.floorsThisCycle++;
+        appendLog(`Floor cleared! Score: ${state.score}`, 'var(--color-potion)');
+
+        if (state.floorsThisCycle >= FLOORS_PER_CYCLE) {
+            state.floorsThisCycle = 0;
+            stopTimer();
+            startTimer();
+            appendLog('7 floors cleared! Timer reset.', 'var(--color-gold)');
+        }
+
+        state.room = state.room.filter(c => !c.resolved);
+        state.lastRoomFleed = false;
+        fillRoom();
+        renderEngine();
+        postActionCheck();
+    }
+
+    function appendLog(text, color='var(--text-main)') {
+        const box  = document.getElementById('ticker-console');
+        const line = document.createElement('div');
+        line.className   = 'ticker-line';
+        line.style.color = color;
+        line.innerText   = `> ${text}`;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function postActionCheck() {
+        if (state.hp <= 0) {
+            state.hp = 0;
+            state.gameActive = false;
+            stopTimer();
+            renderEngine();
+            triggerGameOver('death', 'Your health reached zero.');
+            return;
+        }
+        const monstersLeft = state.deck.filter(c=>c.type==='monster').length
+                           + state.room.filter(c=>!c.resolved && c.card.type==='monster').length;
+        if (monstersLeft === 0) {
+            state.gameActive = false;
+            stopTimer();
+            renderEngine();
+            triggerGameOver('clear', `Threat purged. Score: ${state.score}`);
+            return;
+        }
+        renderEngine();
+    }
+
+    function triggerGameOver(type, reason) {
+        let isNewBest = false;
+        if (state.score > getBestScore()) {
+            setBestScore(state.score);
+            isNewBest = true;
+        }
+
+        const titles   = { death:'GAME OVER', clear:'DUNGEON CLEAR', time:'TIME\'S UP' };
+        const skulls   = { death:'☠️', clear:'🏆', time:'⏳' };
+        const classes  = { death:'death', clear:'clear', time:'time' };
+
+        const titleEl  = document.getElementById('go-title');
+        titleEl.textContent = titles[type];
+        titleEl.className   = `go-title ${classes[type]}`;
+        document.getElementById('go-skull').textContent  = skulls[type];
+        document.getElementById('go-reason').textContent = reason;
+        document.getElementById('go-score').textContent  = state.score;
+        document.getElementById('go-hp').textContent     = Math.max(0, state.hp);
+        document.getElementById('go-best').textContent   = getBestScore();
+
+        const badge = document.getElementById('new-best-badge');
+        badge.classList.toggle('shown', isNewBest);
+
+        for (let i=0;i<3;i++) document.getElementById(`go-stat-${i}`).classList.remove('shown');
+
+        const overlay = document.getElementById('gameover-overlay');
+        const card    = document.getElementById('gameover-card');
+        overlay.style.display = 'flex';
+        card.classList.remove('shown');
+
+        requestAnimationFrame(() => {
+            overlay.classList.add('visible');
+            setTimeout(() => card.classList.add('shown'), 50);
+            [0,1,2].forEach(i => setTimeout(() => document.getElementById(`go-stat-${i}`).classList.add('shown'), 600 + i*120));
+        });
+
+        if (type === 'clear') spawnParticles();
+    }
+
+    function hideGameOver() {
+        const overlay = document.getElementById('gameover-overlay');
+        const card    = document.getElementById('gameover-card');
+        overlay.classList.remove('visible');
+        card.classList.remove('shown');
+        overlay.style.display = 'none';
+        stopParticles();
+    }
+
+    function restartFromGameOver() {
+        hideGameOver();
+        initGame();
+    }
+
+    // ──────────────────────────────────────────────
+    //  PARTICLES
+    // ──────────────────────────────────────────────
+    let particleRAF = null;
+    let particles   = [];
+
+    function spawnParticles() {
+        const canvas = document.getElementById('particles-canvas');
+        canvas.style.display = 'block';
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        particles = [];
+        const colors = ['#fbbf24','#10b981','#3b82f6','#f43f5e','#a78bfa'];
+        for (let i=0;i<80;i++) {
+            particles.push({
+                x: Math.random()*canvas.width,
+                y: Math.random()*canvas.height*0.6,
+                vx: (Math.random()-0.5)*4,
+                vy: (Math.random()-0.5)*4 - 2,
+                r: Math.random()*5+2,
+                color: colors[Math.floor(Math.random()*colors.length)],
+                alpha: 1,
+                decay: Math.random()*0.015+0.008
+            });
+        }
+        function frame() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+                p.alpha -= p.decay;
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            particles = particles.filter(p => p.alpha > 0);
+            if (particles.length > 0) particleRAF = requestAnimationFrame(frame);
+            else canvas.style.display = 'none';
+        }
+        particleRAF = requestAnimationFrame(frame);
+    }
+
+    function stopParticles() {
+        cancelAnimationFrame(particleRAF);
+        const canvas = document.getElementById('particles-canvas');
+        canvas.style.display = 'none';
+        particles = [];
+    }
+
+    // ──────────────────────────────────────────────
+    //  SAVE / LOAD (Corrected Logic)
+    // ──────────────────────────────────────────────
+    function saveGame() {
+        localStorage.setItem('scoundrel_v4_save', JSON.stringify(state));
+        appendLog('Game saved. Time recorded: ' + state.timerSecondsLeft + 's', 'var(--color-potion)');
+    }
+
+    function loadGame() {
+        const raw = localStorage.getItem('scoundrel_v4_save');
+        if (!raw) {
+            appendLog('No save data found.', 'var(--color-monster)');
+            return;
+        }
+
+        stopTimer();
+        state = JSON.parse(raw);
+        renderEngine();
+
+        if (state.gameActive) {
+            startTimer(true); 
+            appendLog('Game loaded. Resuming countdown...', 'var(--color-weapon)');
+        } else {
+            appendLog('Loaded a finished game.', 'var(--text-muted)');
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  PHYSICS
+    // ──────────────────────────────────────────────
+    let cardRestStates = [];
+    function seedCardRestStates() {
+        cardRestStates = [0,1,2,3].map(i => {
+            const sign = i % 2 === 0 ? -1 : 1;
+            const mag  = 4 + Math.random() * 8;
+            const rot  = sign * mag + (Math.random() - 0.5) * 3;
+            const tx   = (Math.random() - 0.5) * 10;
+            const ty   = (Math.random() - 0.5) * 8;
+            const sc   = 0.96 + Math.random() * 0.06;
+            return { rot, tx, ty, sc };
+        });
+    }
+
+    const cardSprings = new WeakMap();
+    function attachCardPhysics(el, slotIndex) {
+        if (!cardRestStates[slotIndex]) return;
+        const rest = cardRestStates[slotIndex];
+        const spring = {
+            rot: rest.rot, tx: rest.tx, ty: rest.ty, sc: rest.sc,
+            vRot: 0, vTx: 0, vTy: 0, vSc: 0,
+            tRot: rest.rot, tTx: rest.tx, tTy: rest.ty, tSc: rest.sc,
+            rest, hovering: false, raf: null, el, pxNorm: 0, pyNorm: 0,
+        };
+        cardSprings.set(el, spring);
+        const dealRot = rest.rot + (Math.random() - 0.5) * 25;
+        spring.rot = dealRot;
+        spring.ty  = -60;
+        spring.sc  = 0.7;
+        spring.vTy = 3;
+        startSpring(spring);
+        el.addEventListener('pointerenter', e => onCardEnter(spring, el, e));
+        el.addEventListener('pointermove',  e => onCardMove(spring, el, e));
+        el.addEventListener('pointerleave', e => onCardLeave(spring, el));
+        el.addEventListener('pointerdown',  e => onCardDown(spring, el, e));
+        el.addEventListener('pointerup',    e => onCardUp(spring, el));
+    }
+
+    function onCardEnter(spring, el, e) {
+        spring.hovering = true;
+        el.classList.add('lifting');
+        spring.tSc = 1.1; spring.tTy = -18; spring.tRot = 0;
+        startSpring(spring);
+    }
+
+    function onCardMove(spring, el, e) {
+        if (!spring.hovering) return;
+        const rect = el.getBoundingClientRect();
+        spring.pxNorm = ((e.clientX - rect.left) / rect.width  - 0.5) * 2;
+        spring.pyNorm = ((e.clientY - rect.top)  / rect.height - 0.5) * 2;
+        spring.tRot = spring.pxNorm * 6;
+        spring.tTx  = spring.pxNorm * 8;
+        spring.tTy  = -18 + spring.pyNorm * 4;
+    }
+
+    function onCardLeave(spring, el) {
+        spring.hovering = false;
+        el.classList.remove('lifting');
+        spring.tRot = spring.rest.rot; spring.tTx = spring.rest.tx;
+        spring.tTy = spring.rest.ty; spring.tSc = spring.rest.sc;
+        spring.vRot += (spring.rest.rot - spring.rot) * 0.15;
+        spring.vTy  += 2;
+    }
+
+    function onCardDown(spring, el, e) {
+        spring.tSc = spring.hovering ? 1.04 : spring.rest.sc * 0.97;
+        spring.vSc = -0.04;
+    }
+
+    function onCardUp(spring, el) {
+        if (spring.hovering) spring.tSc = 1.1;
+    }
+
+    function startSpring(spring) {
+        if (spring.raf) return;
+        spring.raf = requestAnimationFrame(() => tickSpring(spring));
+    }
+
+    function tickSpring(spring) {
+        const K = 0.18, D = 0.72, KS = 0.22, DS = 0.75;
+        const applySpring = (cur, vel, target, k, d) => {
+            const force = (target - cur) * k;
+            const newVel = (vel + force) * d;
+            return { val: cur + newVel, vel: newVel };
+        };
+        let r = applySpring(spring.rot, spring.vRot, spring.tRot, K, D);
+        let tx = applySpring(spring.tx, spring.vTx, spring.tTx, K, D);
+        let ty = applySpring(spring.ty, spring.vTy, spring.tTy, K, D);
+        let sc = applySpring(spring.sc, spring.vSc, spring.tSc, KS, DS);
+        spring.rot = r.val; spring.vRot = r.vel;
+        spring.tx = tx.val; spring.vTx = tx.vel;
+        spring.ty = ty.val; spring.vTy = ty.vel;
+        spring.sc = sc.val; spring.vSc = sc.vel;
+        if (!spring.el.classList.contains('resolved')) {
+            spring.el.style.transform = `translate(${spring.tx.toFixed(2)}px, ${spring.ty.toFixed(2)}px) rotate(${spring.rot.toFixed(3)}deg) scale(${spring.sc.toFixed(4)})`;
+        }
+        const settled = [Math.abs(spring.rot-spring.tRot)<0.02, Math.abs(spring.tx-spring.tTx)<0.05, Math.abs(spring.ty-spring.tTy)<0.05, Math.abs(spring.sc-spring.tSc)<0.001].every(Boolean);
+        if (settled) spring.raf = null; else spring.raf = requestAnimationFrame(() => tickSpring(spring));
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>
