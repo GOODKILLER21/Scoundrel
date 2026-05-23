@@ -3,8 +3,11 @@ workflows:
     name: Scoundrel iOS Build
     environment:
       node: latest
+
     scripts:
       - npm install
+      - npx cap add ios
       - npx cap sync ios
+
     artifacts:
       - ios/**/*.ipa
